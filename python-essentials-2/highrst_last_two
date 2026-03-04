@@ -1,0 +1,24 @@
+class StudentScores:
+    def __init__(self, scores):
+        self.scores = scores
+
+    def highest_last_two(self):
+        try:
+            if len(self.scores) < 2:
+                raise ValueError("Not enough scores to find highest value")
+
+            highest = max(self.scores[-2], self.scores[-1])
+            print("Highest score among last two is:", highest)
+
+        except ValueError as e:
+            print(e)
+
+
+# Example usage
+scores = [45, 67, 89, 72]
+student = StudentScores(scores)
+student.highest_last_two()
+
+# Edge case: less than 2 scores
+student2 = StudentScores([85])
+student2.highest_last_two()
