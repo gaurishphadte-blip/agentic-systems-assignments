@@ -1,0 +1,191 @@
+import re
+from typing import Optional
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict, ValidationError
+
+
+class Address(BaseModel):
+    model_config = ConfigDict(validate_assignment=True)
+
+    city: str = Field(..., min_length=3, description="City name (minimum 3 characters)")
+    pincode: str = Field(..., description="Pincode must be exactly 6 digits")
+
+    @field_validator("pincode")
+    @classmethod
+    def validate_pincode(cls, v: str) -> str:
+        if not re.fullmatch(r"\d{6}", v):
+            raise ValueError("Pincode must be exactly 6 digits (numeric only)")
+        return v
+
+
+class User(BaseModel):
+    model_config = ConfigDict(validate_assignment=True)
+
+    user_id: int
+    name: str
+    email: EmailStr
+    age: int = Field(..., ge=18, description="Age must be 18 or older")
+    address: Address
+    is_premium: Optional[bool] = False
+
+
+# ─────────────────────────────────────────────
+# Helper to register a user and print results
+# ─────────────────────────────────────────────
+def register_user(label: str, data: dict):
+    print(f"\n{'='*55}")
+    print(f"  Test: {label}")
+    print(f"{'='*55}")
+    try:
+        user = User(**data)
+        print("✅ Registration Successful!")
+        print(f"   User ID    : {user.user_id}")
+        print(f"   Name       : {user.name}")
+        print(f"   Email      : {user.email}")
+        print(f"   Age        : {user.age}")
+        print(f"   City       : {user.address.city}")
+        print(f"   Pincode    : {user.address.pincode}")
+        print(f"   Premium    : {user.is_premium}")
+        return user
+    except ValidationError as e:
+        print("❌ Registration Failed:")
+        for err in e.errors():
+            loc = " → ".join(str(l) for l in err["loc"])
+            print(f"   [{loc}] {err['msg']}")
+        return None
+
+
+# ─────────────────────────────────────────────
+# Demo: validate_assignment in action
+# ─────────────────────────────────────────────
+def demo_assignment_validation(user: User):
+    print(f"\n{'='*55}")
+    print("  Demo: validate_assignment=True")
+    print(f"{'='*55}")
+
+    # Valid re-assignment
+    try:
+        user.age = 30
+        print(f"✅ age updated to 30  → age = {user.age}")
+    except ValidationError as e:
+        print(f"❌ {e.errors()[0]['msg']}")
+
+    # Invalid re-assignment (age < 18)
+    try:
+        user.age = 15
+        print(f"✅ age updated to 15  → age = {user.age}")
+    except ValidationError as e:
+        print(f"❌ Cannot set age=15  → {e.errors()[0]['msg']}")
+
+    # Invalid pincode re-assignment
+    try:
+        user.address.pincode = "ABC"
+        print(f"✅ pincode updated    → {user.address.pincode}")
+    except ValidationError as e:
+        print(f"❌ Cannot set pincode='ABC' → {e.errors()[0]['msg']}")
+
+
+# ─────────────────────────────────────────────
+# Test Cases
+# ─────────────────────────────────────────────
+if __name__ == "__main__":
+
+    # 1. Valid user (non-premium)
+    valid_user = register_user(
+        "Valid User — Non-Premium",
+        {
+            "user_id": 1,
+            "name": "Aarav Shah",
+            "email": "aarav@example.com",
+            "age": 25,
+            "address": {"city": "Mumbai", "pincode": "400001"},
+        },
+    )
+
+    # 2. Valid user (premium, explicit True)
+    register_user(
+        "Valid User — Premium",
+        {
+            "user_id": 2,
+            "name": "Priya Mehta",
+            "email": "priya@shop.in",
+            "age": 32,
+            "address": {"city": "Pune", "pincode": "411001"},
+            "is_premium": True,
+        },
+    )
+
+    # 3. Underage user
+    register_user(
+        "Invalid — Underage (age=16)",
+        {
+            "user_id": 3,
+            "name": "Rohan Kumar",
+            "email": "rohan@example.com",
+            "age": 16,
+            "address": {"city": "Delhi", "pincode": "110001"},
+        },
+    )
+
+    # 4. City too short
+    register_user(
+        "Invalid — City name too short ('Ny')",
+        {
+            "user_id": 4,
+            "name": "Sara Jones",
+            "email": "sara@example.com",
+            "age": 22,
+            "address": {"city": "Ny", "pincode": "100001"},
+        },
+    )
+
+    # 5. Bad pincode (letters)
+    register_user(
+        "Invalid — Pincode with letters ('4BC001')",
+        {
+            "user_id": 5,
+            "name": "Vikram Nair",
+            "email": "vikram@example.com",
+            "age": 28,
+            "address": {"city": "Chennai", "pincode": "4BC001"},
+        },
+    )
+
+    # 6. Bad pincode (wrong length)
+    register_user(
+        "Invalid — Pincode wrong length ('1234')",
+        {
+            "user_id": 6,
+            "name": "Neha Gupta",
+            "email": "neha@example.com",
+            "age": 24,
+            "address": {"city": "Jaipur", "pincode": "1234"},
+        },
+    )
+
+    # 7. Invalid email
+    register_user(
+        "Invalid — Bad email format",
+        {
+            "user_id": 7,
+            "name": "Arjun Patel",
+            "email": "not-an-email",
+            "age": 21,
+            "address": {"city": "Surat", "pincode": "395001"},
+        },
+    )
+
+    # 8. Multiple errors at once
+    register_user(
+        "Invalid — Multiple errors (age + city + pincode)",
+        {
+            "user_id": 8,
+            "name": "X",
+            "email": "bad-email",
+            "age": 14,
+            "address": {"city": "XY", "pincode": "12"},
+        },
+    )
+
+    # 9. Demo validate_assignment on the valid user object
+    if valid_user:
+        demo_assignment_validation(valid_user)
