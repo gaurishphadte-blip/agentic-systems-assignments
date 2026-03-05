@@ -1,0 +1,55 @@
+from pydantic import BaseModel, EmailStr, Field, ValidationError
+
+
+class UserRegister(BaseModel):
+    username: str = Field(..., min_length=5, description="Username must be at least 5 characters")
+    email: EmailStr
+    age: int = Field(..., ge=18, description="Age must be 18 or older")
+
+
+def register_user(data: dict):
+    try:
+        user = UserRegister(**data)
+        print(f"✅ Registration successful!")
+        print(f"   Username : {user.username}")
+        print(f"   Email    : {user.email}")
+        print(f"   Age      : {user.age}")
+        return user
+    except ValidationError as e:
+        print(f"❌ Registration failed:")
+        for error in e.errors():
+            field = error["loc"][0]
+            message = error["msg"]
+            print(f"   [{field}] {message}")
+        return None
+
+
+if __name__ == "__main__":
+    test_cases = [
+        {
+            "label": "Valid user",
+            "data": {"username": "alice123", "email": "alice@example.com", "age": 25},
+        },
+        {
+            "label": "Short username (less than 5 chars)",
+            "data": {"username": "bob", "email": "bob@example.com", "age": 22},
+        },
+        {
+            "label": "Invalid email",
+            "data": {"username": "charlie99", "email": "not-an-email", "age": 30},
+        },
+        {
+            "label": "Underage user (age < 18)",
+            "data": {"username": "dave123", "email": "dave@example.com", "age": 16},
+        },
+        {
+            "label": "Multiple errors (short username + invalid email + underage)",
+            "data": {"username": "ed", "email": "bad-email", "age": 15},
+        },
+    ]
+
+    for case in test_cases:
+        print(f"\n{'='*50}")
+        print(f"Test: {case['label']}")
+        print(f"{'='*50}")
+        register_user(case["data"])

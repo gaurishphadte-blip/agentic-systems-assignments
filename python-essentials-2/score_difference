@@ -1,0 +1,24 @@
+class StudentPerformance:
+    def __init__(self, scores):
+        self.scores = scores
+
+    def score_difference(self):
+        try:
+            if len(self.scores) == 0:
+                raise ValueError("No scores available to calculate difference")
+
+            difference = self.scores[-1] - self.scores[0]
+            print("Difference between last and first score is:", difference)
+
+        except ValueError as e:
+            print(e)
+
+
+# Example usage
+scores = [55, 70, 65, 90]
+student = StudentPerformance(scores)
+student.score_difference()
+
+# Edge case: empty list
+student2 = StudentPerformance([])
+student2.score_difference()

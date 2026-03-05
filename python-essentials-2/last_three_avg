@@ -1,0 +1,24 @@
+class StudentMarks:
+    def __init__(self, marks):
+        self.marks = marks
+
+    def last_three_avg(self):
+        try:
+            if len(self.marks) < 3:
+                raise ValueError("Not enough marks to calculate average")
+            
+            avg = (self.marks[-3] + self.marks[-2] + self.marks[-1]) / 3
+            print("Average of last 3 marks is:", avg)
+
+        except ValueError as e:
+            print(e)
+
+
+# Example usage
+marks = [50, 60, 70, 80, 90]
+student = StudentMarks(marks)
+student.last_three_avg()
+
+# Edge case: less than 3 marks
+student2 = StudentMarks([85, 90])
+student2.last_three_avg()
